@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 test {
-    std.testing.refAllDeclsRecursive(@This());
+    std.testing.refAllDecls(@This());
 }
 
 pub extern var CLAY_LAYOUT_DEFAULT: LayoutConfig;
@@ -101,7 +101,7 @@ pub const StringSlice = extern struct {
 pub const Context = opaque {};
 
 /// Clay Arena is a memory arena structure used by Clay to manage its internal allocations
-/// Create using createArenaWithCapacityAndMemory() instead of manually
+/// Create using Arena.init() instead of manually
 pub const Arena = extern struct {
     /// Pointer to the next allocation (internal use)
     next_allocation: usize,
@@ -109,6 +109,12 @@ pub const Arena = extern struct {
     capacity: usize,
     /// Pointer to the arena's memory
     memory: [*]u8,
+
+    /// Creates a Clay arena with the given memory buffer
+    /// Used to initialize Clay's memory management
+    pub fn init(buffer: []u8) Arena {
+        return cdefs.Clay_CreateArenaWithCapacityAndMemory(@intCast(buffer.len), buffer.ptr);
+    }
 };
 
 pub const Dimensions = extern struct {
@@ -837,14 +843,28 @@ pub const setPointerState = cdefs.Clay_SetPointerState;
 /// ```
 /// // Create a buffer for Clay
 /// const buffer_size = minMemorySize();
-/// var buffer = try allocator.alloc(u8, buffer_size);
-/// defer allocator.free(buffer);
+/// var buffer = try gpa.alloc(u8, buffer_size);
+/// defer gpa.free(buffer);
 ///
 /// // Create arena and initialize Clay
-/// const arena = createArenaWithCapacityAndMemory(buffer);
+/// const arena: Arena = .init(buffer);
 /// const ctx = initialize(arena, .{ .w = screen_width, .h = screen_height }, .{});
 /// ```
 pub const initialize = cdefs.Clay_Initialize;
+
+/// Like `initialize`, but allocates the required memory using the provided allocator.
+///
+/// The internal allocation is not exposed and cannot be freed individually.
+/// Thefore, an arena-style allocator must be used.
+///
+/// See also:
+/// * `initialize`
+/// * `minMemorySize`
+pub fn initializeAlloc(arena: std.mem.Allocator, layoutDimensions: Dimensions, errorHandler: ErrorHandler) !*Context {
+    const min_memory_size: u32 = minMemorySize();
+    const memory = try arena.alloc(u8, min_memory_size);
+    return initialize(.init(memory), layoutDimensions, errorHandler);
+}
 
 /// Gets current Clay context - useful when working with multiple UI instances
 pub const getCurrentContext = cdefs.Clay_GetCurrentContext;
@@ -1062,12 +1082,6 @@ pub fn setMeasureTextFunction(
     cdefs.Clay_SetMeasureTextFunction(local.MeasureTextFunctionWrapper, anytypeToAnyopaquePtr(user_data));
 }
 
-/// Creates a Clay arena with the given memory buffer
-/// Used to initialize Clay's memory management
-pub fn createArenaWithCapacityAndMemory(buffer: []u8) Arena {
-    return cdefs.Clay_CreateArenaWithCapacityAndMemory(@intCast(buffer.len), buffer.ptr);
-}
-
 /// Creates a text element with the given string literal and configuration
 ///
 /// see `textDynamic` for runtime known strings
@@ -1076,17 +1090,7 @@ pub fn createArenaWithCapacityAndMemory(buffer: []u8) Arena {
 /// ```
 /// text("Hello World", .{ .font_size = 24, .color = .{255, 0, 0, 255} });
 /// ```
-pub fn text(string: []const u8, config: TextElementConfig) void { //TODO: re-evaluate the value of having a comptime and runtime version of this
-    cdefs.Clay__OpenTextElement(.fromSlice(string), cdefs.Clay__StoreTextElementConfig(config));
-}
-
-/// Creates a text element with the given string and configuration
-///
-/// Example:
-/// ```
-/// text(foor_text, .{ .font_size = 24, .color = .{255, 0, 0, 255} });
-/// ```
-pub fn textDynamic(string: []const u8, config: TextElementConfig) void {
+pub fn text(string: []const u8, config: TextElementConfig) void {
     cdefs.Clay__OpenTextElement(.fromSlice(string), cdefs.Clay__StoreTextElementConfig(config));
 }
 

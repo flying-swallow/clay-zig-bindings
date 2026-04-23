@@ -12,19 +12,11 @@ pub fn build(b: *B) void {
     });
 
     {
-        const clay_lib = b.addLibrary(.{
-            .name = "clay",
-            .linkage = .static,
-            .root_module = b.createModule(.{
-                .target = target,
-                .optimize = optimize,
-            }),
-        });
+        const clay = b.createModule(.{ .target = target, .optimize = optimize });
 
         const clay_dep = b.dependency("clay", .{});
-        clay_lib.addIncludePath(clay_dep.path(""));
-
-        clay_lib.addCSourceFile(.{
+        clay.addIncludePath(clay_dep.path(""));
+        clay.addCSourceFile(.{
             .file = b.addWriteFiles().add("clay.c",
                 \\#define CLAY_IMPLEMENTATION
                 \\#include<clay.h>
@@ -32,6 +24,11 @@ pub fn build(b: *B) void {
             .flags = &.{"-ffreestanding"},
         });
 
+        const clay_lib = b.addLibrary(.{
+            .name = "clay",
+            .linkage = .static,
+            .root_module = clay,
+        });
         root_module.linkLibrary(clay_lib);
     }
 

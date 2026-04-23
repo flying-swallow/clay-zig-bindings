@@ -26,17 +26,17 @@ const FONT_ID_BODY_28 = 7;
 const FONT_ID_BODY_24 = 8;
 const FONT_ID_TITLE_56 = 9;
 
-const COLOR_LIGHT = cl.Color{ 244, 235, 230, 255 };
-const COLOR_LIGHT_HOVER = cl.Color{ 224, 215, 210, 255 };
-const COLOR_BUTTON_HOVER = cl.Color{ 238, 227, 225, 255 };
-const COLOR_BROWN = cl.Color{ 61, 26, 5, 255 };
-const COLOR_RED = cl.Color{ 168, 66, 28, 255 };
-const COLOR_RED_HOVER = cl.Color{ 148, 46, 8, 255 };
-const COLOR_ORANGE = cl.Color{ 225, 138, 50, 255 };
-const COLOR_BLUE = cl.Color{ 111, 173, 162, 255 };
-const COLOR_TEAL = cl.Color{ 111, 173, 162, 255 };
-const COLOR_BLUE_DARK = cl.Color{ 2, 32, 82, 255 };
-const COLOR_ZIG_LOGO = cl.Color{ 247, 164, 29, 255 };
+const COLOR_LIGHT: cl.Color = .{ 244, 235, 230, 255 };
+const COLOR_LIGHT_HOVER: cl.Color = .{ 224, 215, 210, 255 };
+const COLOR_BUTTON_HOVER: cl.Color = .{ 238, 227, 225, 255 };
+const COLOR_BROWN: cl.Color = .{ 61, 26, 5, 255 };
+const COLOR_RED: cl.Color = .{ 168, 66, 28, 255 };
+const COLOR_RED_HOVER: cl.Color = .{ 148, 46, 8, 255 };
+const COLOR_ORANGE: cl.Color = .{ 225, 138, 50, 255 };
+const COLOR_BLUE: cl.Color = .{ 111, 173, 162, 255 };
+const COLOR_TEAL: cl.Color = .{ 111, 173, 162, 255 };
+const COLOR_BLUE_DARK: cl.Color = .{ 2, 32, 82, 255 };
+const COLOR_ZIG_LOGO: cl.Color = .{ 247, 164, 29, 255 };
 
 // Colors for top stripe
 const COLORS_TOP_BORDER = [_]cl.Color{
@@ -47,13 +47,11 @@ const COLORS_TOP_BORDER = [_]cl.Color{
     .{ 168, 66, 28, 255 },
 };
 
-const COLOR_BLOB_BORDER_1 = cl.Color{ 168, 66, 28, 255 };
-const COLOR_BLOB_BORDER_2 = cl.Color{ 203, 100, 44, 255 };
-const COLOR_BLOB_BORDER_3 = cl.Color{ 225, 138, 50, 255 };
-const COLOR_BLOB_BORDER_4 = cl.Color{ 236, 159, 70, 255 };
-const COLOR_BLOB_BORDER_5 = cl.Color{ 240, 189, 100, 255 };
-
-const border_data = cl.BorderData{ .width = 2, .color = COLOR_RED };
+const COLOR_BLOB_BORDER_1: cl.Color = .{ 168, 66, 28, 255 };
+const COLOR_BLOB_BORDER_2: cl.Color = .{ 203, 100, 44, 255 };
+const COLOR_BLOB_BORDER_3: cl.Color = .{ 225, 138, 50, 255 };
+const COLOR_BLOB_BORDER_4: cl.Color = .{ 236, 159, 70, 255 };
+const COLOR_BLOB_BORDER_5: cl.Color = .{ 240, 189, 100, 255 };
 
 fn landingPageBlob(index: u32, font_size: u16, font_id: u16, color: cl.Color, image_size: f32, width: f32, text: []const u8, image: *rl.Texture2D) void {
     cl.UI()(.{
@@ -246,7 +244,7 @@ fn declarativeSyntaxPageMobile() void {
 }
 
 fn colorLerp(a: cl.Color, b: cl.Color, amount: f32) cl.Color {
-    return cl.Color{ a[0] + (b[0] - a[0]) * amount, a[1] + (b[1] - a[1]) * amount, a[2] + (b[2] - a[2]) * amount, a[3] + (b[3] - a[3]) * amount };
+    return .{ a[0] + (b[0] - a[0]) * amount, a[1] + (b[1] - a[1]) * amount, a[2] + (b[2] - a[2]) * amount, a[3] + (b[3] - a[3]) * amount };
 }
 
 const LOREM_IPSUM_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
@@ -322,19 +320,6 @@ fn rendererButtonActive(text: []const u8) void {
         .corner_radius = .all(10),
     })({
         cl.text(text, .{ .font_size = 28, .font_id = FONT_ID_BODY_28, .color = COLOR_LIGHT });
-    });
-}
-
-fn rendererButtonInactive(index: u32, text: []const u8) void {
-    cl.UI()(.{ .layout = .{}, .border = .outside(.{ 2, COLOR_RED }, 10) })({
-        cl.UI()(.{
-            .id = .ID("RendererButtonInactiveInner", index),
-            .layout = .{ .sizing = .{ .w = .fixed(300) }, .padding = .all(16) },
-            .background_color = COLOR_LIGHT,
-            .corner_radius = .all(10),
-        })({
-            cl.text(text, .{ .font_size = 28, .font_id = FONT_ID_BODY_28, .color = COLOR_RED });
-        });
     });
 }
 
@@ -462,16 +447,12 @@ fn loadImage(comptime path: [:0]const u8) !rl.Texture2D {
     rl.setTextureFilter(texture, .bilinear);
     return texture;
 }
-
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const gpa = init.gpa;
+    const arena = init.arena.allocator();
 
     // init clay
-    const min_memory_size: u32 = cl.minMemorySize();
-    const memory = try allocator.alloc(u8, min_memory_size);
-    defer allocator.free(memory);
-    const arena: cl.Arena = cl.createArenaWithCapacityAndMemory(memory);
-    _ = cl.initialize(arena, .{ .h = 1000, .w = 1000 }, .{});
+    _ = try cl.initializeAlloc(arena, .{ .h = 1000, .w = 1000 }, .{});
     cl.setMeasureTextFunction(void, {}, renderer.measureText);
 
     // init raylib
@@ -536,7 +517,7 @@ pub fn main() !void {
         const render_commands = createLayout(if (animation_lerp_value < 0) animation_lerp_value + 1 else 1 - animation_lerp_value);
 
         rl.beginDrawing();
-        try renderer.clayRaylibRender(render_commands, allocator);
+        try renderer.clayRaylibRender(render_commands, gpa);
         rl.endDrawing();
     }
 }
