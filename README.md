@@ -47,12 +47,12 @@ clay.UI()(.{ // function call for creating a scope
 
 ## installation:
 
-Compatible Zig Version: `0.15.1`
+Compatible Zig Version: `0.16.0`
 
 1. Add `zclay` to the dependency list in `build.zig.zon`: 
 
 ```sh
-zig fetch --save git+https://github.com/johan0A/clay-zig-bindings#v0.2.2+0.14
+zig fetch --save git+https://github.com/johan0A/clay-zig-bindings
 ```
 
 2. Config `build.zig`:
@@ -75,7 +75,7 @@ compile_step.root_module.addImport("zclay", zclay_dep.module("zclay"));
 const min_memory_size: u32 = clay.minMemorySize();
 const memory = try allocator.alloc(u8, min_memory_size);
 defer allocator.free(memory);
-const arena: clay.Arena = clay.createArenaWithCapacityAndMemory(memory);
+const arena: clay.Arena = .init(memory);
 _ = clay.initialize(arena, .{ .h = 1000, .w = 1000 }, .{});
 clay.setMeasureTextFunction(void, {}, renderer.measureText);
 ```
